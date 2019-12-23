@@ -753,6 +753,19 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
     return false;
 }
 
+bool CMasternodePayments::ValidateMasternodeWinner(const CScript& payee, int nBlockHeight)
+{
+    if (nBlockHeight < nLastBlockHeight) return true;
+
+    int nCount = 0;
+    CMasternode* pmn = mnodeman.GetNextMasternodeInQueueForPayment(nBlockHeight, true, nCount);
+
+    if (pmn != nullptr) 
+        return payee == GetScriptForDestination(pmn->pubKeyCollateralAddress.GetID());
+
+    return false;
+}
+
 void CMasternodePaymentWinner::Relay()
 {
     CInv inv(MSG_MASTERNODE_WINNER, GetHash());
