@@ -3998,7 +3998,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     }
         
     // Check masternode payments
-    if (nHeight != 0 && block.IsProofOfStake()) {
+    if (IsSporkActive(SPORK_17_MASTERNODE_PAYMENT_CHECK) && nHeight != 0 && block.IsProofOfStake()) {
         const CTransaction& tx = block.vtx[1];
         const unsigned int outs = tx.vout.size();
         if (outs < 3)
