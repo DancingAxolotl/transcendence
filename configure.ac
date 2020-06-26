@@ -1016,6 +1016,15 @@ fi
 
 fi
 
+if test x$enable_wallet != xno; then
+ AC_CHECK_HEADER([curl/curl.h], [
+    AC_CHECK_LIB([curl],[main],[
+      CURL_LIBS="-lcurl"
+      CPPFLAGS="$CPPFLAGS -DCURL_STATICLIB"
+    ],[AC_MSG_ERROR(["libcurl not found"])])
+   ])
+fi
+
 if test x$use_pkgconfig = xyes; then
   : dnl
   m4_ifdef(
@@ -1387,6 +1396,7 @@ AC_SUBST(TESTDEFS)
 AC_SUBST(LEVELDB_TARGET_FLAGS)
 AC_SUBST(MINIUPNPC_CPPFLAGS)
 AC_SUBST(MINIUPNPC_LIBS)
+AC_SUBST(CURL_LIBS)
 AC_SUBST(CRYPTO_LIBS)
 AC_SUBST(SSL_LIBS)
 AC_SUBST(EVENT_LIBS)
