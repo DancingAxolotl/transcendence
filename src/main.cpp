@@ -2197,6 +2197,7 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCou
 bool IsInitialBlockDownload()
 {
     LOCK(cs_main);
+    return false;
     if (fImporting || fReindex || chainActive.Height() < Checkpoints::GetTotalBlocksEstimate())
         return true;
     static bool lockIBDState = false;
@@ -5527,8 +5528,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             !pSporkDB->SporkExists(SPORK_15_NEW_PROTOCOL_ENFORCEMENT_2) &&
             !pSporkDB->SporkExists(SPORK_11_LOCK_INVALID_UTXO) &&
             !pSporkDB->SporkExists(SPORK_16_ZEROCOIN_MAINTENANCE_MODE)) {
-            LogPrintf("Required sporks not found, asking peer to send them\n");
-            pfrom->PushMessage("getsporks");
+            //LogPrintf("Required sporks not found, asking peer to send them\n");
+            //pfrom->PushMessage("getsporks");
         }
 
         int64_t nTime;

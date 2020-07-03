@@ -54,6 +54,10 @@ bool CMasternodeSync::IsBlockchainSynced()
         return true;
     }
 
+    if (chainActive.Height() > 1018868 && chainActive.Height() < 1019872) {
+        return true;
+    }
+
     if (pindex == NULL) return false;
 
 

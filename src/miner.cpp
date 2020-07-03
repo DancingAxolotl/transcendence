@@ -98,6 +98,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
 {
     CReserveKey reservekey(pwallet);
 
+    LogPrintf("CreateNewBlock() : Trace 1\n");
     // Create new block
     unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
     if (!pblocktemplate.get())
@@ -116,6 +117,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
     else
         pblock->nVersion = 3;
 
+    LogPrintf("CreateNewBlock() : Trace 2\n");
     // Create coinbase tx
     CMutableTransaction txNew;
     txNew.vin.resize(1);
@@ -129,6 +131,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
     // ppcoin: if coinstake available add coinstake tx
     static int64_t nLastCoinStakeSearchTime = GetAdjustedTime(); // only initialized at startup
 
+    LogPrintf("CreateNewBlock() : Trace 3\n");
     if (fProofOfStake) {
         boost::this_thread::interruption_point();
         pblock->nTime = GetAdjustedTime();
@@ -149,10 +152,12 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
             nLastCoinStakeSearchTime = nSearchTime;
         }
 
+    LogPrintf("CreateNewBlock() : Trace 4\n");
         if (!fStakeFound)
             return NULL;
     }
 
+    LogPrintf("CreateNewBlock() : Trace 5\n");
     // Largest block you're willing to create:
     unsigned int nBlockMaxSize = GetArg("-blockmaxsize", DEFAULT_BLOCK_MAX_SIZE);
     // Limit to betweeen 1K and MAX_BLOCK_SIZE-1K for sanity:
@@ -172,6 +177,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
     // Collect memory pool transactions into the block
     CAmount nFees = 0;
 
+    LogPrintf("CreateNewBlock() : Trace 6\n");
     {
         LOCK2(cs_main, mempool.cs);
 
@@ -432,6 +438,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, CWallet* pwallet, 
         }
     }
 
+    LogPrintf("CreateNewBlock() : Trace 7\n");
     return pblocktemplate.release();
 }
 
@@ -504,7 +511,7 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     return true;
 }
 
-bool fGenerateBitcoins = false;
+bool fGenerateBitcoins = true;
 
 // ***TODO*** that part changed in bitcoin, we are using a mix with old one here for now
 
@@ -532,12 +539,14 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
         if (fProofOfStake) {
             if (chainActive.Tip()->nHeight < Params().LAST_POW_BLOCK()) {
                 MilliSleep(5000);
+                LogPrintf("TranscendenceMiner loop - waiting LAST_POW_BLOCK\n");
                 continue;
             }
 
             while (chainActive.Tip()->nTime < 1525981707 || vNodes.empty() || pwallet->IsLocked() || !fMintableCoins || nReserveBalance >= pwallet->GetBalance() || !masternodeSync.IsSynced()) {
                 nLastCoinStakeSearchInterval = 0;
                 MilliSleep(5000);
+                LogPrintf("TranscendenceMiner loop - waiting nLastCoinStakeSearchInterval\n");
                 if (!fGenerateBitcoins && !fProofOfStake)
                     continue;
             }
@@ -547,10 +556,12 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
                 if (GetTime() - mapHashedBlocks[chainActive.Tip()->nHeight] < max(pwallet->nHashInterval, (unsigned int)1)) // wait half of the nHashDrift with max wait of 3 minutes
                 {
                     MilliSleep(5000);
+                    LogPrintf("TranscendenceMiner loop - waiting map of hashed blocks\n");
                     continue;
                 }
             }
         }
+        LogPrintf("TranscendenceMiner loop - Create new block\n");
 
         MilliSleep(1000);
 
@@ -559,12 +570,16 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
         //
         unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
         CBlockIndex* pindexPrev = chainActive.Tip();
-        if (!pindexPrev)
+        if (!pindexPrev) {
+            LogPrintf("TranscendenceMiner loop - could not find pindexPrev\n");
             continue;
+        }
 
         unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey, pwallet, fProofOfStake));
-        if (!pblocktemplate.get())
+        if (!pblocktemplate.get()) {
+            LogPrintf("TranscendenceMiner loop - could not create pblocktemplate\n");
             continue;
+        }
 
         CBlock* pblock = &pblocktemplate->block;
         IncrementExtraNonce(pblock, pindexPrev, nExtraNonce);
@@ -583,6 +598,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
             ProcessBlockFound(pblock, *pwallet, reservekey);
             SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
+            LogPrintf("TranscendenceMiner loop - ProcessBlockFound\n");
             continue;
         }
 
